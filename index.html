@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OW2 Map Win Rates</title>
+<meta name="description" content="Overwatch 2 hero win rate deviations by competitive map.">
+<meta name="theme-color" content="#0d1117">
+<style>
+  :root {
+    --bg: #0b0f14;
+    --bg-elev: #131922;
+    --bg-elev-2: #1a2130;
+    --border: #232c3d;
+    --text: #e6edf3;
+    --text-dim: #8b98ad;
+    --accent: #ff9e2c;
+    --accent-2: #f26b1a;
+    --good: #3ddc84;
+    --good-dim: #22a862;
+    --bad: #ff5c73;
+    --bad-dim: #d63d55;
+    --tank: #4aa3ff;
+    --dps: #ff8a5c;
+    --sup: #7ad97a;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(1200px 600px at 20% -20%, rgba(255,158,44,0.08), transparent 60%),
+      radial-gradient(900px 500px at 90% 10%, rgba(74,163,255,0.06), transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+    padding: 20px 16px 48px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  header h1 {
+    margin: 0; font-size: 20px; letter-spacing: 0.3px;
+    font-weight: 700;
+  }
+  header h1 .accent { color: var(--accent); }
+  header .sub {
+    font-size: 12px; color: var(--text-dim);
+  }
+
+  .controls {
+    display: grid; gap: 12px;
+    grid-template-columns: 1fr;
+    margin: 18px 0 20px;
+  }
+  @media (min-width: 640px) {
+    .controls { grid-template-columns: 1fr auto; align-items: center; }
+  }
+  .control-label {
+    display: block; font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  select.map-select {
+    width: 100%;
+    background: var(--bg-elev);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 40px 12px 14px;
+    font-size: 15px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%238b98ad' d='M6 8L0 0h12z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 10px 7px;
+    cursor: pointer;
+  }
+  select.map-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .roles {
+    display: inline-flex; gap: 4px; padding: 4px;
+    background: var(--bg-elev); border: 1px solid var(--border);
+    border-radius: var(--radius); flex-wrap: wrap;
+  }
+  .roles button {
+    background: transparent; color: var(--text-dim); border: 0;
+    padding: 8px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-family: inherit;
+  }
+  .roles button:hover { color: var(--text); }
+  .roles button.active {
+    background: var(--accent);
+    color: #16110a;
+  }
+
+  .map-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .map-card .mode-badge {
+    display: inline-block;
+    font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+    background: var(--bg-elev-2); color: var(--text-dim);
+    padding: 3px 8px; border-radius: 999px; margin-right: 8px;
+    border: 1px solid var(--border);
+    vertical-align: 2px;
+  }
+  .map-card h2 { margin: 0 0 10px; font-size: 22px; }
+  .map-card .desc { color: var(--text-dim); font-size: 14px; margin: 0; }
+  .map-card .tips {
+    margin-top: 10px; font-size: 13px; color: var(--text-dim);
+    border-top: 1px dashed var(--border); padding-top: 10px;
+  }
+  .map-card .tips h4 {
+    margin: 0 0 4px; color: var(--text); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  .role-section { margin-top: 20px; }
+  .role-section h3 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-dim); margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .role-section h3 .dot {
+    width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+  }
+  .role-Tank    .dot { background: var(--tank); }
+  .role-DPS     .dot { background: var(--dps); }
+  .role-Support .dot { background: var(--sup); }
+
+  .lists {
+    display: grid; gap: 14px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 720px) {
+    .lists { grid-template-columns: 1fr 1fr; }
+  }
+
+  .list-card {
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 14px 6px;
+  }
+  .list-card h4 {
+    margin: 0 0 10px; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-dim);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .list-card.top h4 { color: var(--good); }
+  .list-card.bot h4 { color: var(--bad); }
+  .row {
+    display: grid;
+    grid-template-columns: 22px 1fr auto auto;
+    align-items: center;
+    padding: 8px 4px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    gap: 10px;
+  }
+  .row:first-of-type { border-top: 0; }
+  .row .rank { color: var(--text-dim); font-size: 12px; text-align: right; }
+  .row .name { font-weight: 600; }
+  .row .dev { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700; }
+  .row .dev.pos { color: var(--good); }
+  .row .dev.neg { color: var(--bad); }
+  .row .overall { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: 12px; min-width: 62px; text-align: right; }
+
+  .empty { color: var(--text-dim); font-size: 13px; padding: 8px 4px; }
+
+  footer {
+    margin-top: 28px;
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+  }
+  footer a { color: var(--text-dim); }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .legend span code {
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 4px;
+    color: var(--text); font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="accent">OW2</span> Map Win Rates</h1>
+      <div class="sub">Hero win rate deviations by competitive map. Values show how a hero performs on the map vs their overall win rate.</div>
+    </div>
+    <div class="sub" id="genstamp"></div>
+  </header>
+
+  <div class="controls">
+    <div>
+      <label class="control-label" for="mapSelect">Map</label>
+      <select id="mapSelect" class="map-select" aria-label="Select a map"></select>
+    </div>
+    <div>
+      <label class="control-label">Role</label>
+      <div class="roles" id="roleFilter" role="tablist">
+        <button data-role="All" class="active" role="tab">All Roles</button>
+        <button data-role="Tank" role="tab">Tank</button>
+        <button data-role="DPS" role="tab">DPS</button>
+        <button data-role="Support" role="tab">Support</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mapView"></div>
+
+  <footer>
+    Data refreshes weekly. Deviations are shown as percentage points above/below each hero's overall win rate on this map.
+  </footer>
+</div>
+
+<script id="ow-data" type="application/json">{"generatedAt":null,"maps":[{"key":"Antarctica","name":"Antarctic Peninsula","mode":"Control","meta":{"description":"A research station set in Antarctica. Three-point rotation: Labs (tight indoor corridors), Icebreaker (open central deck with flanking ice bridges), and Sublevel (underground maze with tight halls and a large central room). High verticality in Icebreaker; Labs and Sublevel favor brawl.","compositions":"- *Brawl:* Reinhardt/Ramattra + Reaper/Junkrat/Vendetta + Lucio/Brigitte or Wuyang — overwhelming in Labs and Sublevel\n- *Disruptor:* Wrecking Ball + Sombra + JPC (Jetpack Cat) — chaos comp especially effective on Icebreaker","tips":"- On Icebreaker, control the elevated center ice platform; it opens attack angles to all three capture zones.\n- Sublevel's underground routes allow flanks behind the enemy team mid-fight.\n- Labs corridors punish spread-out teams; group tightly and use corner-fire heroes."}},{"key":"Busan","name":"Busan","mode":"Control","meta":{"description":"South Korean coastal city. Three points: MEKA Base (tight garage/hangar interior), Sanctuary (outdoor temple area with mid-range sightlines and high ground), and Downtown (massive open street with long sightlines and flanking alleys). Highly varied — no single comp dominates all three.","compositions":"- *Poke/Dive hybrid:* Winston/Hazard + Widowmaker/Tracer + Ana/Zenyatta — strong on Downtown and Sanctuary\n- *Dive:* D.Va/Winston + Genji/Tracer + Kiriko/Lucio — fast point contests, especially MEKA Base","tips":"- MEKA Base: control the elevated platform in the back-left; it overlooks the entire point.\n- Sanctuary: the torii gate is a key sightline blocker; Widowmaker can abuse the right-side perch.\n- Downtown: the subway tunnel flank can catch teams off-guard; Sombra and Tracer excel here."}},{"key":"Ilios","name":"Ilios","mode":"Control","meta":{"description":"Greek island setting. Three points: Well (circular platform with a death pit in the center), Lighthouse (open elevated coastal area with a deadly cliff edge), and Ruins (winding temple paths with mid-range sightlines). Well and Lighthouse emphasize knockbacks and mobility.","compositions":"- *Boop-centric:* Wrecking Ball/Domina + Mei/Pharah + Lucio/Wuyang — control the ledge, shove enemies in\n- *Sustain brawl:* Junker Queen + Junkrat/Reaper + Moira/Brigitte — grind on Ruins","tips":"- Well: heroes with movement CC (Domina, Mei, Lucio, Wrecking Ball) determine the fight outcome. Contest from the rim, not the center.\n- Lighthouse: don't overextend toward the cliff edge; Roadhog hook or Lucio boop ends fights instantly.\n- Ruins: use the side flanking paths to avoid direct choke confrontation."}},{"key":"Lijiang","name":"Lijiang Tower","mode":"Control","meta":{"description":"Chinese skyscraper complex. Three points: Control Center (indoor office area with a raised center platform and glass room), Garden (outdoor plaza with a koi pond pit and high-ground flanks), and Night Market (open street with stall cover and multiple approach routes).","compositions":"- *Sustain poke:* Sigma/Orisa + Hanzo/Sierra + Ana/Zenyatta — slow grind, Garden and Night Market\n- *Dive:* Winston + Genji/Sombra + Kiriko/Lucio — fast caps on Control Center","tips":"- Control Center: the glass room is a key sight line control point; Symmetra turrets inside punish point holds.\n- Garden: the koi pond can be used like the Well pit; Wrecking Ball and Lucio boop excel.\n- Night Market: the elevated balcony left-side overlooks the point and most approach routes; contest it immediately."}},{"key":"Nepal","name":"Nepal","mode":"Control","meta":{"description":"Himalayan monastery. Three points: Village (small winding courtyard), Sanctum (rooftop temple with a long main hall and two flanking balconies), and Shrine (small raised altar room with a deadly drop behind it).","compositions":"- *Brawl:* Reinhardt/Domina + Reaper/Junkrat/Vendetta + Lucio/Moira or Wuyang\n- *Sustained:* Ramattra + Emre/Junkrat + Ana/Brigitte — slow grind especially in Sanctum","tips":"- Shrine: the altar room is very small; AoE ults (Domina Panopticon, Emre Override Protocol, Junkrat Rip-Tire) win fights instantly.\n- Sanctum: the balcony flanks are essential — contesting them denies the enemy any angles while your team has protected lanes.\n- Village: don't fight in the open courtyard; use the right alley path to maintain cover and contest safely."}},{"key":"Oasis","name":"Oasis","mode":"Control","meta":{"description":"Futuristic Middle Eastern research city. Three points: City Center (open intersection with a fan pit and tall buildings), Gardens (outdoor botanical area with a large pit/drop), and University (indoor multi-floor academic building with elevators).","compositions":"- *Boop/pit:* Wrecking Ball + Pharah/Freja + Lucio/Juno — City Center and Gardens\n- *Dive:* D.Va/Hazard + Anran/Tracer + Kiriko/Lucio — fast University caps","tips":"- City Center: the fan killzone in the center is a constant threat; heroes with self-sustain or invulnerability (Baptiste, Kiriko Suzu) are priority.\n- Gardens: the pit edge is lethal; hold high ground and use knockback abilities aggressively.\n- University: elevator control determines the fight; contest the upper floor immediately."}},{"key":"Samoa","name":"Samoa","mode":"Control","meta":{"description":"Pacific island village turned arena. Three points: Village (open thatched-roof plaza with mid-range combat), Beach (coastal area with long sightlines and elevated rocks), and Sanctum (ancient stone ruins with tight corridors and a central altar).","compositions":"- *Poke:* Orisa/Domina + Widowmaker or Hanzo/Sierra + Ana or Zenyatta/Illari — dominant on Beach\n- *Brawl:* Junker Queen + Reaper/Cassidy + Moira/Wuyang — strong on Sanctum","tips":"- Beach: the elevated rock formations on the right side are critical high ground; losing them means losing the point to poke damage.\n- Village: the thatched structures provide cover but also funnel teams into chokes — Junkrat and Emre thrive here.\n- Sanctum: coordinate ults on the small central altar. Panopticon, Override Protocol, and Sundering Blade are room-winning ultimates."}},{"key":"Circuit Royal","name":"Circuit Royal","mode":"Escort","meta":{"description":"Monaco F1 circuit. Extremely long sightlines, a massive open starting boulevard, elevated casino walkways, and tight underground tunnel sections near the end. One of the most sniper-friendly maps in the game.","compositions":"- *Poke/sniper:* Sigma/Orisa + Widowmaker/Sojourn or Ashe + Ana/Zenyatta — suffocate pushes at range\n- *Counter-sniper dive:* D.Va/Winston + Tracer/Sombra + Kiriko/Lucio — dive the Widowmaker player","tips":"- Attackers should use the side alleys off the main boulevard to avoid direct sniper fire; route through upper floor.\n- Casino section: the upper walkway overlooking the payload path is critical to contest.\n- Tunnel end: tight corridor favors Reaper, Junkrat, and Ramattra Nemesis Form."}},{"key":"Dorado","name":"Dorado","mode":"Escort","meta":{"description":"Mexican coastal village. Winding uphill streets, multiple high-ground balconies, indoor building shortcuts, and a dramatic final stretch near the temple. Medium sightlines with verticality throughout.","compositions":"- *Brawl push:* Reinhardt/Domina + Reaper/Junkrat + Lucio/Brigitte — force through every choke\n- *Mobility:* Hazard + Anran/Tracer/Vendetta + Kiriko/Juno — constant pressure on multiple angles","tips":"- First choke (blue building): attackers should use the left-side indoor shortcut to avoid direct confrontation.\n- Mid-section: securing the upper balcony above the fountain gives attackers a dominant angle on defenders below.\n- Final stretch: Ashe's B.O.B. on the temple staircase can single-handedly break a stalled defense."}},{"key":"Havana","name":"Havana","mode":"Escort","meta":{"description":"Cuban coastal city. Long straight streets, rum distillery interior, rooftop areas, and a dramatic sea-view finale. Strong sightlines for the first and last sections; more brawl-oriented in the mid.","compositions":"- *Poke:* Sigma/Orisa + Widowmaker/Hanzo + Ana/Baptiste — hold the road, deny entry\n- *Distillery brawl:* Roadhog/Junker Queen + Reaper/Freja + Moira/Wuyang","tips":"- First section: the rum barrels and truck cover on the right side are critical for attackers to reach mid safely.\n- Distillery (mid): multiple levels and the barrel maze create strong Reaper and Junkrat angles.\n- Finale: the sea-view rooftop is THE most important position; whoever controls it controls the last point."}},{"key":"Junkertown","name":"Junkertown","mode":"Escort","meta":{"description":"Australian wasteland city of scavengers. Long straight opening section with the dump and scrap piles, complex mid-town streets, and a dramatic arena finale. Chaotic and punishing to coordinate in.","compositions":"- *Bruiser:* Roadhog or Junker Queen + Junkrat/Ashe + Ana/Lucio — raw damage and sustain\n- *Disruption:* Wrecking Ball + Emre/Sombra + Kiriko/Moira — chaos in every section","tips":"- Opening section: attackers push to the first left turn quickly; the sniper positions on the right scaffold punish slow pushes.\n- Mid-town: the upper floor shortcuts are essential; teams stuck on the street get crossfired from multiple angles.\n- Arena finale: it's a chaotic circle; Wrecking Ball Minefield, Mauga Overrun, and Junkrat Rip-Tire all excel."}},{"key":"Rialto","name":"Rialto","mode":"Escort","meta":{"description":"Venetian canals in Italy. Scenic but mechanically demanding. Tight canal bridges, indoor building routes, open plaza mid, and a boat finale over water. Mid-range fights throughout.","compositions":"- *Control:* Sigma/Reinhardt + Hanzo/Widowmaker + Ana/Baptiste — poke and hold the plaza\n- *Aggression:* Roadhog/Domina + Junkrat/Vendetta + Lucio/Mizuki — brawl through every bridge and indoor section","tips":"- First section bridges: use the indoor building route on the left side to avoid direct bridge confrontation.\n- Plaza: the second-floor sniper position above the market stalls is the most contested real estate on the map.\n- Boat finale: sightlines across the water are long; Sigma Gravitic Flux and Junkrat Rip-Tire are water finale ult winners."}},{"key":"Route 66","name":"Route 66","mode":"Escort","meta":{"description":"American Southwest highway. Gas station start, main road mid with trains and cover, diner section, and a cave finale under a bridge. Classic payload map with distinct phases and good verticality mid-section.","compositions":"- *Brawl push:* Reinhardt + Junkrat/Soldier:76 + Lucio/Ana — no-nonsense payload grind\n- *Poke:* Orisa + Ashe/Sierra + Ana/Baptiste — suffocate defenders at range on main road and diner","tips":"- Gas station: attackers should contest the gas station roof immediately; it overlooks both the payload and the main street.\n- Train section: the train cars create excellent cover for flankers; Sombra can hack defenders from behind them.\n- Cave finale: it's dark and tight; AoE ults dominate. Ramattra Annihilation, Junkrat Rip-Tire, and Emre Override Protocol all win the fight."}},{"key":"Shambali","name":"Shambali Monastery","mode":"Escort","meta":{"description":"Omnic monastery in the Himalayas. High-altitude setting. Long open first section on the monastery exterior, a complex courtyard mid, and a dramatic mountaintop finale with a massive drop on one side. Verticality throughout.","compositions":"- *Poke:* Sigma/Orisa + Widowmaker/Hanzo + Ana/Zenyatta — exterior section lockdown\n- *Dive finale:* D.Va/Hazard + Pharah/Freja + Juno/Mercy — mountaintop air control","tips":"- Exterior: the monastery wall on the right side is a key position for defenders; attackers should use the interior shortcut to avoid it.\n- Courtyard: multiple levels and crisscross angles create chaos; focus fire rather than splitting.\n- Mountaintop finale: knockback abilities (Pharah, Freja Bola Shot, Lucio) can end fights instantly with kills off the edge."}},{"key":"Gibraltar","name":"Watchpoint: Gibraltar","mode":"Escort","meta":{"description":"Watchpoint: Gibraltar (Escort). Rocket-launch facility on the Mediterranean coast — three payload segments moving through cliff paths, indoor hangars, and the rocket assembly interior. First point is a classic long-sightline defender's paradise; second point breaks into tight corridors; the final push has heavy verticality. Sharpshooters and long-range poke thrive on defense; brawl and dive close distance on attack once the payload turns indoors.","compositions":"","tips":""}},{"key":"Aatlis","name":"Aatlis","mode":"Flashpoint","meta":{"description":"Aatlis (Flashpoint). Sprawling multi-point map with rotating capture zones spread across large distances. Rewards mobility, macro rotations, and comps that can teamfight repeatedly without long downtime. Fast heroes and self-sustain shine — Wrecking Ball, D.Va, Winston, Tracer, Sombra — as does Symmetra's teleporter for rotations. Long stretches between zones punish slow lineups.","compositions":"","tips":""}},{"key":"New Junk","name":"New Junk City","mode":"Flashpoint","meta":{"description":"Junkertown wasteland district. Five capture points spread across scrap yards, industrial warehouses, and open dumps. Mid-range and close-range throughout with abundant cover and flanking routes.","compositions":"- *Brawl five-points:* Roadhog/Junker Queen + Junkrat/Emre + Lucio/Moira\n- *Disruption:* Wrecking Ball/Mauga + Sombra/Reaper + Kiriko/Ana","tips":"- Five-point Flashpoint requires speed; teams with mobility (Wrecking Ball, Lucio) can contest faster.\n- Industrial warehouse points favor close-range teams; open dump points favor poke.\n- Junkrat and Emre's grenade bounces through scrap walls are extremely hard to predict and counter."}},{"key":"Suravasa","name":"Suravasa","mode":"Flashpoint","meta":{"description":"Indian temple complex. Five capture points across temple courtyards, ceremonial halls, and garden areas. Blend of open courtyard mid-range and tight interior close-range.","compositions":"- *Sustained poke:* Sigma/Orisa + Hanzo/Sierra + Ana/Illari — courtyard dominance\n- *Interior brawl:* Ramattra/Domina + Reaper/Vendetta + Mizuki/Moira — hall point control","tips":"- Courtyard points reward poke teams; hall points reward brawl teams. Flex your roster accordingly.\n- Temple rooftops (if accessible) provide extreme vertical angles; contest them with Freja, Pharah, or Juno.\n- Mizuki's Kekkai Sanctuary on interior points is one of the strongest point-holding support abilities in Flashpoint."}},{"key":"Blizz World","name":"Blizzard World","mode":"Hybrid","meta":{"description":"Theme park set in a Blizzard game universe. Winding first-point assault, then escort through themed zones (WoW, StarCraft, Diablo). Multiple high-ground perches, enclosed indoor areas, and a final open stretch.","compositions":"- *Brawl:* Reinhardt/Domina + Junkrat/Emre + Lucio/Brigitte\n- *Hybrid:* Sigma/Wrecking Ball + Soldier:76/Hanzo + Baptiste/Mizuki","tips":"- First point: use the indoor shortcuts through the gift shop to avoid the main choke confrontation.\n- WoW zone: the elevated walkway above the payload is the most important position; contest it before pushing.\n- Final stretch: it opens up significantly; transition to poke heroes if you've been running brawl."}},{"key":"Eichenwalde","name":"Eichenwalde","mode":"Hybrid","meta":{"description":"German castle village. First-point castle gate assault, then escort through the village and across a castle bridge, ending inside the castle throne room. Iconic defensive positions on the gate and bridge.","compositions":"- *Classic brawl:* Reinhardt + Junkrat/Hanzo + Ana/Zenyatta — timeless Eichenwalde comp\n- *Stall:* Ramattra + Bastion/Hanzo + Baptiste/Wuyang — hold every checkpoint","tips":"- Gate: attackers must eliminate the high-ground Hanzo/Widow position before committing to the gate.\n- Bridge: THE most legendary defensive position. Push through it fast; stalling on the bridge is a death sentence.\n- Throne room: it's a confined space with a very narrow entry. AoE ults and Reinhardt Earthshatter dominate."}},{"key":"Hollywood","name":"Hollywood","mode":"Hybrid","meta":{"description":"Los Angeles movie studio. First point in the movie star mansion, escort through studio lots (Western, horror, sci-fi themed), ending at a spaceship finale. Mid-range fights throughout studio sections with close-range finale.","compositions":"- *Dive:* D.Va/Hazard + Genji/Anran or Sombra + Kiriko/Lucio\n- *Flex:* Sigma + Reaper/Sierra + Baptiste/Jetpack Cat","tips":"- First point: control the upper balcony overlooking the pool; it's the primary defensive angle.\n- Studio sections: there are flanking routes through every \"set\"; don't just push the main road.\n- Finale: the spaceship interior is tiny. AoE ults (Earthshatter, Override Protocol, Sundering Blade) win it."}},{"key":"King's Row","name":"King's Row","mode":"Hybrid","meta":{"description":"London at night. Iconic Hybrid map. First point assault on the manor gate, then escort through cobblestone streets and underground sections, ending with a final point in the streets before a gated area. Multiple height levels and flanking paths.","compositions":"- *Classic brawl:* Reinhardt/Domina + Junkrat/Reaper + Lucio/Ana\n- *Mixed:* Ramattra + Widowmaker/Junkrat + Ana/Wuyang","tips":"- Gate: the rooftop flanking path on the right side bypasses the main gate choke entirely.\n- Underground: incredibly tight. Avoid spreading out; brawl in a pack. Junkrat thrives.\n- Final stretch: the street narrows significantly before the endpoint; Earthshatter and Panopticon both hit the entire team."}},{"key":"Midtown","name":"Midtown","mode":"Hybrid","meta":{"description":"New York City midtown. First point assault at Grand Central Terminal, then escort through city streets and underground tunnels, ending in a theater district finale. Blend of open street combat and indoor close-range.","compositions":"- *Poke/brawl hybrid:* Sigma/Orisa + Hanzo/Reaper + Ana/Baptiste\n- *Disruption:* Wrecking Ball + Emre/Sombra + Kiriko/Mizuki","tips":"- Grand Central: the upper floor balconies are critical defensive positions; attackers need to clear them before pushing in.\n- Streets: Ashe B.O.B. on the street crossings effectively blocks pushes.\n- Theater finale: it's a tight interior; Ramattra Annihilation and Emre Override Protocol dominate."}},{"key":"Neo Junction","name":"Neo Junction City","mode":"Hybrid","meta":{"description":"Neo Junction City (Hybrid). Neon-lit near-future Junker City. First point contest is a wide urban plaza with elevated flanks; escort phase snakes through market corridors and skybridges. Verticality and short flank routes favor dive tanks and mobile DPS; the tight second segment opens the door to brawl and area-denial specialists.","compositions":"","tips":""}},{"key":"Numbani","name":"Numbani","mode":"Hybrid","meta":{"description":"Futuristic African city. First point at the airport terminal, then escort along the highway and through the urban center, ending in an ornate city plaza. Long mid-game sightlines on the highway section.","compositions":"- *Pharmercy:* D.Va/Sigma + Pharah/Freja + Ana or Mercy/Juno — highway air dominance\n- *Brawl:* Reinhardt + Reaper/Genji + Lucio/Ana — airport and city plaza","tips":"- Airport: the second-floor catwalk is the primary defensive position; attackers flank from the garden path right side.\n- Highway: this section strongly favors aerial heroes; if you run ground compositions, use the cover aggressively.\n- City plaza finale: it's an ornate open courtyard; Reinhardt Earthshatter and Sigma Gravitic Flux win it."}},{"key":"Paraiso","name":"Paraiso","mode":"Hybrid","meta":{"description":"Brazilian carnival city. First point at a colorful festival stage, then escort through samba-themed streets and tropical gardens, ending at a beach finale. Verticality with festival platforms and elevated garden paths.","compositions":"- *Mobile push:* Wrecking Ball/Domina + Tracer/Anran + Lucio/Kiriko — constant mobility\n- *Sustain:* Orisa/Junker Queen + Cassidy/Junkrat + Wuyang/Juno","tips":"- Festival stage: the elevated DJ booth is a key high ground for defenders; attackers should flank through the right alley.\n- Garden section: multiple vertical paths create confusion; maintain team cohesion and push together.\n- Beach finale: the open beach is exposed from multiple building windows; clear the flanking buildings before contesting."}},{"key":"Colosseo","name":"Colosseo","mode":"Push","meta":{"description":"Roman Colosseum district in Rome. Central push battleground with the robot starting in the middle. Wide main road, elevated archways, underground passages, and the Colosseum structure itself dominating one end.","compositions":"- *Poke:* Sigma + Widowmaker/Sierra + Ana/Zenyatta — sightline dominance\n- *Brawl:* Reinhardt/Ramattra + Bastion/Junkrat + Lucio/Baptiste","tips":"- The robot starts center; first contest usually determines the tempo.\n- Archways provide high ground over the main road; controlling them with Widowmaker or Hanzo is priority.\n- Underground passages offer protected flank routes but are tight; Ramattra and Reaper excel there."}},{"key":"Esperanca","name":"Esperanca","mode":"Push","meta":{"description":"Portuguese coastal village. Winding cobblestone streets, elevated oceanview terraces, indoor building shortcuts, and a central plaza where the robot path crosses. Mid-range to close-range throughout.","compositions":"- *Brawl:* Roadhog/Junker Queen + Reaper/Junkrat + Lucio/Moira or Wuyang\n- *Skirmish:* Domina + Tracer/Vendetta/Emre + Kiriko/Wuyang","tips":"- The robot path passes through the central plaza twice; coordinate pushes when the path is most exposed.\n- Terrace high ground overlooking the plaza is a premium position; losing it means losing poke control.\n- Building shortcuts allow deep flanks; Sombra and Tracer can bypass the entire street engagement."}},{"key":"Queen St.","name":"New Queen Street","mode":"Push","meta":{"description":"Australian street in Junkertown style. Wide main road, scaffold high grounds, indoor pub/store shortcuts, and industrial side routes. Chaotic and open.","compositions":"- *Raw brawl:* Junker Queen/Mauga + Junkrat/Reaper + Ana/Brigitte\n- *Disruption:* Wrecking Ball + Anran/Cassidy + Lucio/Jetpack Cat","tips":"- Main road is the primary battleground; scaffolds are the secondary high-ground contest.\n- Pub interior shortcut allows flanking behind the enemy team pushing the robot.\n- Mauga's Overrun ult in the main road cluster is one of the most powerful ults on this map."}},{"key":"Runasapi","name":"Runasapi","mode":"Push","meta":{"description":"Andean mountain city. Elevated terraces, narrow staircased streets, and dramatic viewpoints across the mountain valley. Verticality is the defining characteristic; multi-level engagements throughout.","compositions":"- *Aerial:* D.Va/Sigma + Pharah/Freja + Ana or Mercy/Juno — valley air dominance\n- *Dive:* Hazard/D.Va + Genji/Hanzo + Ana/Zenyatta","tips":"- Upper terraces dominate; whoever controls the highest ground wins the robot push.\n- Valley sightlines are enormous; mobile heroes or Defense Matrix are required to contest them.\n- Staircases are choke points; Ramattra Nemesis Form and Vendetta Soaring Slice are lethal there."}}],"heroes":[{"name":"Anran","role":"DPS","overall":51.5,"byMap":{"Antarctica":1.6,"Busan":0.0,"Ilios":0.8,"Lijiang":-1.0,"Nepal":-0.4,"Oasis":-0.4,"Samoa":-0.1,"Circuit Royal":-0.9,"Dorado":0.1,"Havana":-0.4,"Junkertown":0.0,"Rialto":0.0,"Route 66":0.2,"Shambali":1.0,"Gibraltar":0.8,"Aatlis":2.6,"New Junk":1.5,"Suravasa":2.2,"Blizz World":-0.5,"Eichenwalde":0.3,"Hollywood":-0.3,"King's Row":-0.9,"Midtown":-0.4,"Neo Junction":1.5,"Numbani":0.4,"Paraiso":0.3,"Colosseo":1.8,"Esperanca":0.9,"Queen St.":0.6,"Runasapi":1.0}},{"name":"Ashe","role":"DPS","overall":51.2,"byMap":{"Antarctica":-1.8,"Busan":-0.8,"Ilios":-2.0,"Lijiang":-1.7,"Nepal":-3.2,"Oasis":-1.8,"Samoa":-1.4,"Circuit Royal":2.7,"Dorado":1.4,"Havana":1.8,"Junkertown":1.0,"Rialto":-0.3,"Route 66":-0.9,"Shambali":-1.2,"Gibraltar":0.7,"Aatlis":2.9,"New Junk":-0.1,"Suravasa":2.2,"Blizz World":0.6,"Eichenwalde":-1.1,"Hollywood":0.8,"King's Row":0.5,"Midtown":1.1,"Neo Junction":-0.3,"Numbani":1.0,"Paraiso":2.0,"Colosseo":-1.2,"Esperanca":-1.7,"Queen St.":-1.9,"Runasapi":-0.5}},{"name":"Bastion","role":"DPS","overall":48.0,"byMap":{"Antarctica":2.8,"Busan":1.5,"Ilios":0.9,"Lijiang":1.6,"Nepal":1.8,"Oasis":1.8,"Samoa":2.7,"Circuit Royal":1.9,"Dorado":-1.1,"Havana":-0.8,"Junkertown":-0.7,"Rialto":-0.6,"Route 66":-1.3,"Shambali":0.2,"Gibraltar":0.5,"Aatlis":-0.1,"New Junk":-0.5,"Suravasa":-0.2,"Blizz World":0.5,"Eichenwalde":-0.6,"Hollywood":-1.1,"King's Row":0.6,"Midtown":-1.5,"Neo Junction":0.6,"Numbani":-0.7,"Paraiso":0.5,"Colosseo":-1.2,"Esperanca":-0.3,"Queen St.":0.2,"Runasapi":-0.9}},{"name":"Cassidy","role":"DPS","overall":47.9,"byMap":{"Antarctica":1.6,"Busan":0.6,"Ilios":-1.6,"Lijiang":-0.7,"Nepal":-0.7,"Oasis":1.7,"Samoa":0.4,"Circuit Royal":-0.1,"Dorado":0.3,"Havana":1.1,"Junkertown":0.8,"Rialto":-0.4,"Route 66":-0.1,"Shambali":1.1,"Gibraltar":-0.3,"Aatlis":-2.8,"New Junk":-1.6,"Suravasa":-2.1,"Blizz World":1.4,"Eichenwalde":1.2,"Hollywood":-0.6,"King's Row":-0.5,"Midtown":0.6,"Neo Junction":1.2,"Numbani":0.8,"Paraiso":0.8,"Colosseo":-1.8,"Esperanca":0.2,"Queen St.":-0.3,"Runasapi":2.6}},{"name":"Echo","role":"DPS","overall":47.9,"byMap":{"Antarctica":-0.2,"Busan":-2.1,"Ilios":1.6,"Lijiang":-1.4,"Nepal":0.5,"Oasis":-1.3,"Samoa":-0.8,"Circuit Royal":-0.4,"Dorado":1.0,"Havana":-0.6,"Junkertown":0.1,"Rialto":0.7,"Route 66":1.7,"Shambali":-0.2,"Gibraltar":0.6,"Aatlis":0.6,"New Junk":-0.9,"Suravasa":0.2,"Blizz World":-2.6,"Eichenwalde":2.7,"Hollywood":-1.0,"King's Row":0.1,"Midtown":-1.9,"Neo Junction":-0.4,"Numbani":2.2,"Paraiso":-0.6,"Colosseo":2.3,"Esperanca":-0.5,"Queen St.":-0.8,"Runasapi":0.5}},{"name":"Emre","role":"DPS","overall":47.1,"byMap":{"Antarctica":-1.1,"Busan":1.5,"Ilios":-0.9,"Lijiang":-0.1,"Nepal":-0.2,"Oasis":-0.6,"Samoa":-1.3,"Circuit Royal":0.5,"Dorado":-1.4,"Havana":2.2,"Junkertown":0.0,"Rialto":0.3,"Route 66":-0.1,"Shambali":0.4,"Gibraltar":0.7,"Aatlis":-1.1,"New Junk":-2.9,"Suravasa":0.0,"Blizz World":2.6,"Eichenwalde":-1.0,"Hollywood":-0.2,"King's Row":-0.7,"Midtown":0.9,"Neo Junction":0.3,"Numbani":1.4,"Paraiso":0.2,"Colosseo":-1.2,"Esperanca":-0.2,"Queen St.":0.4,"Runasapi":-2.1}},{"name":"Freja","role":"DPS","overall":46.6,"byMap":{"Antarctica":-1.8,"Busan":0.0,"Ilios":-0.3,"Lijiang":-1.1,"Nepal":-0.7,"Oasis":0.1,"Samoa":-1.3,"Circuit Royal":1.7,"Dorado":0.7,"Havana":0.7,"Junkertown":-0.7,"Rialto":-0.2,"Route 66":0.9,"Shambali":-0.7,"Gibraltar":0.5,"Aatlis":-2.2,"New Junk":-2.5,"Suravasa":-0.7,"Blizz World":0.3,"Eichenwalde":-0.1,"Hollywood":0.9,"King's Row":-0.2,"Midtown":0.2,"Neo Junction":-1.0,"Numbani":1.4,"Paraiso":3.4,"Colosseo":-1.4,"Esperanca":0.6,"Queen St.":-2.0,"Runasapi":-1.3}},{"name":"Genji","role":"DPS","overall":52.4,"byMap":{"Antarctica":-3.7,"Busan":-2.0,"Ilios":0.0,"Lijiang":0.2,"Nepal":-2.0,"Oasis":-1.4,"Samoa":-3.3,"Circuit Royal":-0.5,"Dorado":0.0,"Havana":1.4,"Junkertown":-0.7,"Rialto":0.8,"Route 66":2.0,"Shambali":1.7,"Gibraltar":-0.9,"Aatlis":-1.5,"New Junk":1.4,"Suravasa":-1.2,"Blizz World":1.4,"Eichenwalde":0.9,"Hollywood":1.6,"King's Row":0.0,"Midtown":1.3,"Neo Junction":0.1,"Numbani":-0.7,"Paraiso":1.6,"Colosseo":0.9,"Esperanca":-0.7,"Queen St.":0.3,"Runasapi":-0.8}},{"name":"Hanzo","role":"DPS","overall":50.6,"byMap":{"Antarctica":-3.1,"Busan":-3.8,"Ilios":-2.2,"Lijiang":-0.6,"Nepal":-2.5,"Oasis":-1.9,"Samoa":-3.0,"Circuit Royal":1.5,"Dorado":-0.7,"Havana":0.7,"Junkertown":-2.3,"Rialto":1.3,"Route 66":0.7,"Shambali":0.6,"Gibraltar":-0.7,"Aatlis":0.7,"New Junk":-3.3,"Suravasa":-3.2,"Blizz World":0.8,"Eichenwalde":0.9,"Hollywood":1.7,"King's Row":2.4,"Midtown":0.8,"Neo Junction":0.8,"Numbani":0.8,"Paraiso":1.5,"Colosseo":-0.2,"Esperanca":-2.9,"Queen St.":-2.2,"Runasapi":0.9}},{"name":"Junkrat","role":"DPS","overall":49.6,"byMap":{"Antarctica":0.5,"Busan":-3.2,"Ilios":2.2,"Lijiang":1.0,"Nepal":2.5,"Oasis":0.5,"Samoa":-2.0,"Circuit Royal":-1.0,"Dorado":0.4,"Havana":-2.3,"Junkertown":-1.8,"Rialto":0.0,"Route 66":0.7,"Shambali":-0.1,"Gibraltar":0.4,"Aatlis":-1.3,"New Junk":0.5,"Suravasa":-1.4,"Blizz World":-0.8,"Eichenwalde":2.8,"Hollywood":0.6,"King's Row":1.4,"Midtown":-0.3,"Neo Junction":-1.9,"Numbani":0.1,"Paraiso":-2.3,"Colosseo":-2.2,"Esperanca":-3.8,"Queen St.":0.0,"Runasapi":-2.3}},{"name":"Mei","role":"DPS","overall":49.5,"byMap":{"Antarctica":2.0,"Busan":0.2,"Ilios":0.5,"Lijiang":0.3,"Nepal":2.7,"Oasis":1.2,"Samoa":1.3,"Circuit Royal":0.1,"Dorado":-0.7,"Havana":-0.7,"Junkertown":-1.0,"Rialto":1.1,"Route 66":-0.4,"Shambali":0.8,"Gibraltar":0.8,"Aatlis":0.4,"New Junk":2.7,"Suravasa":0.8,"Blizz World":-1.2,"Eichenwalde":-0.7,"Hollywood":0.7,"King's Row":0.3,"Midtown":-0.3,"Neo Junction":0.2,"Numbani":-1.4,"Paraiso":-1.5,"Colosseo":0.5,"Esperanca":0.5,"Queen St.":1.6,"Runasapi":0.2}},{"name":"Pharah","role":"DPS","overall":48.8,"byMap":{"Antarctica":-3.7,"Busan":-3.3,"Ilios":3.5,"Lijiang":4.0,"Nepal":0.5,"Oasis":-1.2,"Samoa":0.8,"Circuit Royal":-1.3,"Dorado":-0.8,"Havana":-4.3,"Junkertown":-2.1,"Rialto":2.6,"Route 66":0.2,"Shambali":-1.2,"Gibraltar":-2.9,"Aatlis":-4.9,"New Junk":-0.2,"Suravasa":3.7,"Blizz World":-0.8,"Eichenwalde":1.3,"Hollywood":-0.1,"King's Row":-0.4,"Midtown":-3.8,"Neo Junction":-2.8,"Numbani":-3.3,"Paraiso":0.0,"Colosseo":-1.0,"Esperanca":-1.5,"Queen St.":-4.9,"Runasapi":-2.2}},{"name":"Reaper","role":"DPS","overall":48.3,"byMap":{"Antarctica":2.0,"Busan":-0.3,"Ilios":2.7,"Lijiang":1.8,"Nepal":1.2,"Oasis":1.5,"Samoa":1.4,"Circuit Royal":-2.1,"Dorado":0.3,"Havana":-2.8,"Junkertown":-0.7,"Rialto":-1.6,"Route 66":-0.5,"Shambali":-0.4,"Gibraltar":0.1,"Aatlis":-0.6,"New Junk":0.4,"Suravasa":0.1,"Blizz World":0.5,"Eichenwalde":-1.2,"Hollywood":0.1,"King's Row":0.5,"Midtown":-0.8,"Neo Junction":0.1,"Numbani":-0.3,"Paraiso":-1.8,"Colosseo":0.6,"Esperanca":2.6,"Queen St.":1.7,"Runasapi":0.9}},{"name":"Shion","role":"DPS","overall":55.3,"byMap":{"Antarctica":-1.7,"Busan":-0.8,"Ilios":-1.8,"Lijiang":-1.3,"Nepal":-2.7,"Oasis":-1.2,"Samoa":-1.6,"Circuit Royal":0.0,"Dorado":0.2,"Havana":1.8,"Junkertown":2.0,"Rialto":0.1,"Route 66":0.4,"Shambali":0.6,"Gibraltar":0.7,"Aatlis":1.7,"New Junk":-1.5,"Suravasa":0.5,"Blizz World":1.7,"Eichenwalde":-0.4,"Hollywood":0.3,"King's Row":-0.3,"Midtown":1.2,"Neo Junction":2.2,"Numbani":-0.6,"Paraiso":1.1,"Colosseo":-0.1,"Esperanca":-0.6,"Queen St.":-0.7,"Runasapi":1.1}},{"name":"Sierra","role":"DPS","overall":50.1,"byMap":{"Antarctica":-2.1,"Busan":0.4,"Ilios":-1.8,"Lijiang":-0.6,"Nepal":0.4,"Oasis":0.2,"Samoa":0.4,"Circuit Royal":1.0,"Dorado":1.5,"Havana":0.2,"Junkertown":1.0,"Rialto":0.3,"Route 66":-0.7,"Shambali":0.8,"Gibraltar":1.7,"Aatlis":-1.7,"New Junk":-2.7,"Suravasa":-1.1,"Blizz World":0.6,"Eichenwalde":-0.2,"Hollywood":-1.0,"King's Row":0.6,"Midtown":-0.3,"Neo Junction":0.9,"Numbani":-0.2,"Paraiso":0.1,"Colosseo":0.8,"Esperanca":-0.8,"Queen St.":0.4,"Runasapi":-2.4}},{"name":"Sojourn","role":"DPS","overall":44.5,"byMap":{"Antarctica":-0.4,"Busan":1.4,"Ilios":-0.7,"Lijiang":0.2,"Nepal":1.2,"Oasis":1.0,"Samoa":0.1,"Circuit Royal":0.6,"Dorado":0.1,"Havana":1.3,"Junkertown":-0.4,"Rialto":0.1,"Route 66":0.1,"Shambali":-0.7,"Gibraltar":-1.7,"Aatlis":-3.7,"New Junk":-0.3,"Suravasa":-0.1,"Blizz World":0.6,"Eichenwalde":1.0,"Hollywood":-0.1,"King's Row":0.5,"Midtown":0.5,"Neo Junction":0.6,"Numbani":-0.2,"Paraiso":-0.3,"Colosseo":-0.8,"Esperanca":-0.6,"Queen St.":-1.8,"Runasapi":-1.7}},{"name":"Soldier: 76","role":"DPS","overall":50.1,"byMap":{"Antarctica":1.8,"Busan":2.8,"Ilios":-0.7,"Lijiang":-0.1,"Nepal":1.1,"Oasis":0.8,"Samoa":0.1,"Circuit Royal":0.3,"Dorado":-0.9,"Havana":1.3,"Junkertown":0.7,"Rialto":-0.5,"Route 66":0.2,"Shambali":-0.2,"Gibraltar":-0.7,"Aatlis":-0.5,"New Junk":0.8,"Suravasa":-0.1,"Blizz World":-0.4,"Eichenwalde":-0.8,"Hollywood":0.1,"King's Row":-1.7,"Midtown":0.5,"Neo Junction":0.5,"Numbani":1.5,"Paraiso":0.9,"Colosseo":0.1,"Esperanca":1.7,"Queen St.":3.3,"Runasapi":2.7}},{"name":"Sombra","role":"DPS","overall":51.4,"byMap":{"Antarctica":0.4,"Busan":-0.6,"Ilios":-1.2,"Lijiang":-1.7,"Nepal":-3.1,"Oasis":0.2,"Samoa":1.9,"Circuit Royal":-0.5,"Dorado":2.8,"Havana":-1.3,"Junkertown":-0.4,"Rialto":-0.7,"Route 66":1.3,"Shambali":0.8,"Gibraltar":-2.7,"Aatlis":1.0,"New Junk":6.3,"Suravasa":-1.9,"Blizz World":0.2,"Eichenwalde":0.7,"Hollywood":1.6,"King's Row":-0.3,"Midtown":2.5,"Neo Junction":-0.3,"Numbani":2.4,"Paraiso":-1.3,"Colosseo":2.3,"Esperanca":2.9,"Queen St.":2.7,"Runasapi":3.7}},{"name":"Symmetra","role":"DPS","overall":48.9,"byMap":{"Antarctica":6.1,"Busan":6.1,"Ilios":5.8,"Lijiang":8.6,"Nepal":8.0,"Oasis":6.2,"Samoa":6.4,"Circuit Royal":-3.2,"Dorado":-2.7,"Havana":-3.1,"Junkertown":-2.7,"Rialto":-3.0,"Route 66":-3.9,"Shambali":-1.4,"Gibraltar":-2.4,"Aatlis":2.1,"New Junk":0.4,"Suravasa":3.8,"Blizz World":-3.0,"Eichenwalde":-1.7,"Hollywood":-2.5,"King's Row":-1.0,"Midtown":0.1,"Neo Junction":-3.0,"Numbani":-2.7,"Paraiso":-1.0,"Colosseo":-4.4,"Esperanca":-2.0,"Queen St.":-0.7,"Runasapi":-0.6}},{"name":"Torbjörn","role":"DPS","overall":51.7,"byMap":{"Antarctica":4.4,"Busan":4.2,"Ilios":4.4,"Lijiang":3.7,"Nepal":4.7,"Oasis":4.9,"Samoa":4.8,"Circuit Royal":-0.2,"Dorado":-1.5,"Havana":0.1,"Junkertown":-0.9,"Rialto":-0.6,"Route 66":-1.2,"Shambali":-0.7,"Gibraltar":-0.9,"Aatlis":2.2,"New Junk":6.0,"Suravasa":2.6,"Blizz World":-2.1,"Eichenwalde":0.9,"Hollywood":-1.6,"King's Row":-1.2,"Midtown":-0.5,"Neo Junction":-2.3,"Numbani":-0.2,"Paraiso":-1.8,"Colosseo":1.0,"Esperanca":1.7,"Queen St.":2.9,"Runasapi":-0.4}},{"name":"Tracer","role":"DPS","overall":51.1,"byMap":{"Antarctica":3.0,"Busan":0.1,"Ilios":-0.5,"Lijiang":0.2,"Nepal":-0.6,"Oasis":-0.3,"Samoa":0.1,"Circuit Royal":-3.5,"Dorado":-0.3,"Havana":-0.4,"Junkertown":-0.7,"Rialto":-0.7,"Route 66":0.0,"Shambali":-0.6,"Gibraltar":-1.7,"Aatlis":5.7,"New Junk":2.2,"Suravasa":3.3,"Blizz World":1.9,"Eichenwalde":0.1,"Hollywood":0.1,"King's Row":-1.6,"Midtown":0.4,"Neo Junction":0.8,"Numbani":0.0,"Paraiso":-1.7,"Colosseo":4.3,"Esperanca":3.3,"Queen St.":3.0,"Runasapi":4.0}},{"name":"Vendetta","role":"DPS","overall":49.8,"byMap":{"Antarctica":-1.1,"Busan":-2.8,"Ilios":0.3,"Lijiang":-0.9,"Nepal":-0.7,"Oasis":-3.3,"Samoa":-2.1,"Circuit Royal":0.5,"Dorado":0.0,"Havana":-1.9,"Junkertown":-0.3,"Rialto":2.2,"Route 66":0.9,"Shambali":1.7,"Gibraltar":1.0,"Aatlis":0.9,"New Junk":-1.1,"Suravasa":-4.4,"Blizz World":-0.4,"Eichenwalde":0.6,"Hollywood":1.7,"King's Row":1.4,"Midtown":-0.1,"Neo Junction":2.1,"Numbani":0.5,"Paraiso":-0.9,"Colosseo":0.1,"Esperanca":-0.9,"Queen St.":-4.4,"Runasapi":-0.8}},{"name":"Venture","role":"DPS","overall":50.4,"byMap":{"Antarctica":0.0,"Busan":-1.7,"Ilios":1.8,"Lijiang":-0.3,"Nepal":0.7,"Oasis":-0.6,"Samoa":2.3,"Circuit Royal":-0.3,"Dorado":0.0,"Havana":-2.4,"Junkertown":0.3,"Rialto":0.1,"Route 66":0.4,"Shambali":-1.0,"Gibraltar":0.7,"Aatlis":0.6,"New Junk":2.6,"Suravasa":1.7,"Blizz World":-2.9,"Eichenwalde":0.6,"Hollywood":0.0,"King's Row":0.2,"Midtown":-0.6,"Neo Junction":0.8,"Numbani":-3.0,"Paraiso":0.4,"Colosseo":1.9,"Esperanca":0.3,"Queen St.":0.2,"Runasapi":0.1}},{"name":"Widowmaker","role":"DPS","overall":50.4,"byMap":{"Antarctica":-9.3,"Busan":-3.6,"Ilios":-5.6,"Lijiang":-8.3,"Nepal":-8.1,"Oasis":-9.3,"Samoa":-4.3,"Circuit Royal":3.8,"Dorado":-0.3,"Havana":2.7,"Junkertown":1.6,"Rialto":1.4,"Route 66":-0.1,"Shambali":-2.3,"Gibraltar":1.8,"Aatlis":-3.9,"New Junk":-5.1,"Suravasa":-8.1,"Blizz World":-0.6,"Eichenwalde":-3.8,"Hollywood":0.3,"King's Row":4.6,"Midtown":0.6,"Neo Junction":-1.8,"Numbani":-0.9,"Paraiso":-0.6,"Colosseo":-4.6,"Esperanca":-1.6,"Queen St.":-3.8,"Runasapi":-9.2}},{"name":"D.Va","role":"Tank","overall":49.0,"byMap":{"Antarctica":0.1,"Busan":1.7,"Ilios":-0.2,"Lijiang":-0.5,"Nepal":-0.6,"Oasis":1.6,"Samoa":-0.4,"Circuit Royal":-0.6,"Dorado":0.9,"Havana":0.4,"Junkertown":1.5,"Rialto":-2.3,"Route 66":-0.4,"Shambali":-1.1,"Gibraltar":1.7,"Aatlis":3.0,"New Junk":1.2,"Suravasa":1.6,"Blizz World":0.6,"Eichenwalde":-0.1,"Hollywood":1.3,"King's Row":-2.1,"Midtown":-0.2,"Neo Junction":-0.4,"Numbani":2.4,"Paraiso":0.6,"Colosseo":-0.4,"Esperanca":1.2,"Queen St.":2.3,"Runasapi":2.6}},{"name":"Domina","role":"Tank","overall":51.2,"byMap":{"Antarctica":0.5,"Busan":0.2,"Ilios":-0.9,"Lijiang":-0.5,"Nepal":-0.8,"Oasis":-2.5,"Samoa":-1.7,"Circuit Royal":3.5,"Dorado":-1.5,"Havana":2.3,"Junkertown":-1.0,"Rialto":1.1,"Route 66":-0.9,"Shambali":-0.6,"Gibraltar":-1.4,"Aatlis":-2.8,"New Junk":-5.8,"Suravasa":-2.0,"Blizz World":0.6,"Eichenwalde":0.2,"Hollywood":0.0,"King's Row":0.9,"Midtown":0.7,"Neo Junction":1.1,"Numbani":-0.9,"Paraiso":1.8,"Colosseo":-4.2,"Esperanca":-0.9,"Queen St.":-0.8,"Runasapi":-2.1}},{"name":"Doomfist","role":"Tank","overall":52.0,"byMap":{"Antarctica":-2.8,"Busan":-3.6,"Ilios":-2.6,"Lijiang":-0.5,"Nepal":-1.8,"Oasis":-0.8,"Samoa":-2.3,"Circuit Royal":0.9,"Dorado":1.1,"Havana":1.8,"Junkertown":0.7,"Rialto":0.2,"Route 66":0.7,"Shambali":-0.1,"Gibraltar":0.9,"Aatlis":-0.2,"New Junk":0.4,"Suravasa":1.2,"Blizz World":1.5,"Eichenwalde":1.1,"Hollywood":0.3,"King's Row":2.5,"Midtown":0.4,"Neo Junction":1.0,"Numbani":-0.7,"Paraiso":0.8,"Colosseo":3.2,"Esperanca":0.2,"Queen St.":-1.5,"Runasapi":0.0}},{"name":"Hazard","role":"Tank","overall":51.4,"byMap":{"Antarctica":-2.0,"Busan":0.0,"Ilios":1.0,"Lijiang":0.6,"Nepal":0.0,"Oasis":-2.7,"Samoa":-0.3,"Circuit Royal":-1.3,"Dorado":2.0,"Havana":-0.8,"Junkertown":0.5,"Rialto":-0.6,"Route 66":1.6,"Shambali":-1.0,"Gibraltar":0.5,"Aatlis":1.9,"New Junk":-0.9,"Suravasa":-0.2,"Blizz World":-1.1,"Eichenwalde":0.3,"Hollywood":-0.4,"King's Row":-1.4,"Midtown":-0.1,"Neo Junction":-0.1,"Numbani":0.1,"Paraiso":2.3,"Colosseo":1.5,"Esperanca":0.5,"Queen St.":-0.6,"Runasapi":1.0}},{"name":"Junker Queen","role":"Tank","overall":50.7,"byMap":{"Antarctica":-1.3,"Busan":1.4,"Ilios":0.5,"Lijiang":0.4,"Nepal":0.0,"Oasis":1.8,"Samoa":2.1,"Circuit Royal":-1.1,"Dorado":-1.5,"Havana":-0.5,"Junkertown":1.5,"Rialto":-0.9,"Route 66":-1.1,"Shambali":-0.8,"Gibraltar":0.1,"Aatlis":2.9,"New Junk":2.4,"Suravasa":0.5,"Blizz World":-1.3,"Eichenwalde":-1.6,"Hollywood":-0.1,"King's Row":-0.6,"Midtown":1.4,"Neo Junction":1.2,"Numbani":-1.8,"Paraiso":-0.3,"Colosseo":1.4,"Esperanca":-1.4,"Queen St.":3.4,"Runasapi":2.6}},{"name":"Mauga","role":"Tank","overall":51.4,"byMap":{"Antarctica":4.1,"Busan":2.8,"Ilios":0.7,"Lijiang":1.0,"Nepal":2.3,"Oasis":3.2,"Samoa":2.9,"Circuit Royal":-0.4,"Dorado":-0.9,"Havana":-0.2,"Junkertown":2.9,"Rialto":-1.8,"Route 66":-0.2,"Shambali":-1.3,"Gibraltar":-1.1,"Aatlis":3.6,"New Junk":3.2,"Suravasa":4.4,"Blizz World":0.7,"Eichenwalde":-2.1,"Hollywood":-1.1,"King's Row":-2.3,"Midtown":1.0,"Neo Junction":-0.3,"Numbani":0.1,"Paraiso":0.4,"Colosseo":1.4,"Esperanca":3.0,"Queen St.":2.2,"Runasapi":1.2}},{"name":"Orisa","role":"Tank","overall":48.7,"byMap":{"Antarctica":0.7,"Busan":0.9,"Ilios":0.8,"Lijiang":1.0,"Nepal":1.4,"Oasis":0.7,"Samoa":0.7,"Circuit Royal":-0.6,"Dorado":-0.9,"Havana":1.1,"Junkertown":-0.2,"Rialto":0.4,"Route 66":-0.2,"Shambali":-0.5,"Gibraltar":-0.3,"Aatlis":-4.3,"New Junk":-0.3,"Suravasa":-0.9,"Blizz World":0.3,"Eichenwalde":-0.7,"Hollywood":0.2,"King's Row":0.0,"Midtown":-0.4,"Neo Junction":0.1,"Numbani":0.7,"Paraiso":1.0,"Colosseo":-1.4,"Esperanca":-1.4,"Queen St.":-1.2,"Runasapi":-1.1}},{"name":"Ramattra","role":"Tank","overall":48.1,"byMap":{"Antarctica":0.5,"Busan":1.9,"Ilios":0.7,"Lijiang":0.0,"Nepal":1.3,"Oasis":0.0,"Samoa":0.0,"Circuit Royal":0.2,"Dorado":0.1,"Havana":0.6,"Junkertown":-0.2,"Rialto":-0.3,"Route 66":0.9,"Shambali":1.0,"Gibraltar":0.8,"Aatlis":2.5,"New Junk":0.7,"Suravasa":-0.8,"Blizz World":0.5,"Eichenwalde":0.0,"Hollywood":-0.2,"King's Row":0.1,"Midtown":-0.2,"Neo Junction":0.0,"Numbani":-0.2,"Paraiso":-1.0,"Colosseo":-1.0,"Esperanca":-1.7,"Queen St.":-0.2,"Runasapi":-0.1}},{"name":"Reinhardt","role":"Tank","overall":54.2,"byMap":{"Antarctica":-1.9,"Busan":-1.2,"Ilios":-1.2,"Lijiang":0.8,"Nepal":-0.6,"Oasis":-2.1,"Samoa":-0.9,"Circuit Royal":-0.1,"Dorado":-0.5,"Havana":-0.9,"Junkertown":-1.4,"Rialto":1.1,"Route 66":-0.6,"Shambali":1.7,"Gibraltar":-1.2,"Aatlis":-3.7,"New Junk":-1.8,"Suravasa":0.6,"Blizz World":-0.1,"Eichenwalde":1.9,"Hollywood":-1.5,"King's Row":2.7,"Midtown":0.2,"Neo Junction":1.2,"Numbani":-1.1,"Paraiso":-1.4,"Colosseo":0.4,"Esperanca":2.1,"Queen St.":0.4,"Runasapi":1.4}},{"name":"Roadhog","role":"Tank","overall":47.6,"byMap":{"Antarctica":1.8,"Busan":1.1,"Ilios":3.9,"Lijiang":0.2,"Nepal":0.6,"Oasis":2.5,"Samoa":0.7,"Circuit Royal":-3.4,"Dorado":-0.5,"Havana":-0.7,"Junkertown":-0.7,"Rialto":1.9,"Route 66":0.9,"Shambali":-0.7,"Gibraltar":-3.2,"Aatlis":0.5,"New Junk":0.1,"Suravasa":-2.2,"Blizz World":-0.6,"Eichenwalde":0.0,"Hollywood":0.2,"King's Row":-1.6,"Midtown":-0.5,"Neo Junction":0.0,"Numbani":-1.4,"Paraiso":-0.3,"Colosseo":-1.7,"Esperanca":-1.8,"Queen St.":-0.3,"Runasapi":-0.2}},{"name":"Sigma","role":"Tank","overall":50.2,"byMap":{"Antarctica":-0.3,"Busan":-2.1,"Ilios":-3.0,"Lijiang":-1.0,"Nepal":-2.1,"Oasis":-1.1,"Samoa":-2.3,"Circuit Royal":4.2,"Dorado":-0.7,"Havana":1.4,"Junkertown":-1.2,"Rialto":0.7,"Route 66":-0.8,"Shambali":1.7,"Gibraltar":0.6,"Aatlis":-3.1,"New Junk":-6.1,"Suravasa":-4.0,"Blizz World":0.9,"Eichenwalde":-0.1,"Hollywood":0.9,"King's Row":0.5,"Midtown":1.7,"Neo Junction":0.6,"Numbani":0.8,"Paraiso":0.1,"Colosseo":-2.7,"Esperanca":-2.7,"Queen St.":-2.4,"Runasapi":-3.5}},{"name":"Winston","role":"Tank","overall":48.6,"byMap":{"Antarctica":1.2,"Busan":-0.5,"Ilios":0.8,"Lijiang":-0.9,"Nepal":0.3,"Oasis":1.0,"Samoa":1.7,"Circuit Royal":-1.4,"Dorado":1.0,"Havana":-0.6,"Junkertown":0.8,"Rialto":-1.9,"Route 66":-0.3,"Shambali":-0.4,"Gibraltar":4.1,"Aatlis":1.4,"New Junk":1.8,"Suravasa":0.5,"Blizz World":-0.3,"Eichenwalde":-1.7,"Hollywood":1.7,"King's Row":-2.0,"Midtown":-1.3,"Neo Junction":-2.7,"Numbani":1.1,"Paraiso":2.2,"Colosseo":1.8,"Esperanca":4.4,"Queen St.":0.7,"Runasapi":2.4}},{"name":"Wrecking Ball","role":"Tank","overall":51.2,"byMap":{"Antarctica":-2.8,"Busan":-2.0,"Ilios":-1.5,"Lijiang":-0.4,"Nepal":-1.3,"Oasis":-3.9,"Samoa":-4.0,"Circuit Royal":1.6,"Dorado":3.4,"Havana":-0.3,"Junkertown":3.2,"Rialto":0.0,"Route 66":0.6,"Shambali":3.7,"Gibraltar":1.1,"Aatlis":2.9,"New Junk":4.2,"Suravasa":4.0,"Blizz World":-0.9,"Eichenwalde":-0.1,"Hollywood":-1.3,"King's Row":0.1,"Midtown":-3.8,"Neo Junction":-0.8,"Numbani":0.7,"Paraiso":-1.0,"Colosseo":4.6,"Esperanca":3.7,"Queen St.":1.1,"Runasapi":4.7}},{"name":"Zarya","role":"Tank","overall":49.2,"byMap":{"Antarctica":4.4,"Busan":-0.5,"Ilios":-1.6,"Lijiang":-0.9,"Nepal":0.3,"Oasis":2.5,"Samoa":2.2,"Circuit Royal":-0.5,"Dorado":0.6,"Havana":1.2,"Junkertown":-0.3,"Rialto":-0.3,"Route 66":0.2,"Shambali":-1.4,"Gibraltar":1.6,"Aatlis":1.5,"New Junk":1.3,"Suravasa":-1.1,"Blizz World":0.9,"Eichenwalde":-0.4,"Hollywood":-0.3,"King's Row":-0.4,"Midtown":0.3,"Neo Junction":1.2,"Numbani":0.2,"Paraiso":-0.8,"Colosseo":-0.8,"Esperanca":-2.7,"Queen St.":1.8,"Runasapi":-4.6}},{"name":"Ana","role":"Support","overall":47.1,"byMap":{"Antarctica":-2.0,"Busan":-2.4,"Ilios":-3.1,"Lijiang":-2.9,"Nepal":-1.8,"Oasis":-1.7,"Samoa":-2.8,"Circuit Royal":1.4,"Dorado":0.5,"Havana":3.1,"Junkertown":0.9,"Rialto":1.3,"Route 66":0.8,"Shambali":0.9,"Gibraltar":0.1,"Aatlis":-0.4,"New Junk":-1.5,"Suravasa":-2.5,"Blizz World":0.8,"Eichenwalde":0.9,"Hollywood":0.8,"King's Row":1.5,"Midtown":1.1,"Neo Junction":0.1,"Numbani":0.5,"Paraiso":0.4,"Colosseo":-2.5,"Esperanca":-1.1,"Queen St.":-1.7,"Runasapi":-1.7}},{"name":"Baptiste","role":"Support","overall":50.3,"byMap":{"Antarctica":0.5,"Busan":0.4,"Ilios":-1.3,"Lijiang":-0.2,"Nepal":0.4,"Oasis":0.9,"Samoa":-0.1,"Circuit Royal":0.4,"Dorado":0.7,"Havana":-0.6,"Junkertown":-0.2,"Rialto":1.2,"Route 66":-0.6,"Shambali":-1.0,"Gibraltar":1.1,"Aatlis":-1.7,"New Junk":-1.9,"Suravasa":0.7,"Blizz World":0.2,"Eichenwalde":-1.0,"Hollywood":-1.3,"King's Row":0.8,"Midtown":-0.3,"Neo Junction":0.5,"Numbani":1.4,"Paraiso":1.2,"Colosseo":-0.2,"Esperanca":1.0,"Queen St.":0.1,"Runasapi":1.1}},{"name":"Brigitte","role":"Support","overall":51.5,"byMap":{"Antarctica":0.2,"Busan":1.1,"Ilios":2.2,"Lijiang":1.4,"Nepal":1.4,"Oasis":0.8,"Samoa":1.1,"Circuit Royal":-3.3,"Dorado":-0.8,"Havana":-1.3,"Junkertown":1.1,"Rialto":-1.3,"Route 66":-0.3,"Shambali":-0.9,"Gibraltar":0.5,"Aatlis":2.6,"New Junk":0.8,"Suravasa":1.9,"Blizz World":-0.9,"Eichenwalde":-0.7,"Hollywood":-1.2,"King's Row":-0.5,"Midtown":0.2,"Neo Junction":-1.3,"Numbani":1.1,"Paraiso":-1.6,"Colosseo":0.2,"Esperanca":0.0,"Queen St.":1.5,"Runasapi":-0.6}},{"name":"Illari","role":"Support","overall":50.6,"byMap":{"Antarctica":1.8,"Busan":0.3,"Ilios":1.6,"Lijiang":0.6,"Nepal":0.6,"Oasis":1.6,"Samoa":1.7,"Circuit Royal":-0.1,"Dorado":0.4,"Havana":0.9,"Junkertown":1.3,"Rialto":0.0,"Route 66":-0.5,"Shambali":0.6,"Gibraltar":-0.3,"Aatlis":-0.9,"New Junk":-0.2,"Suravasa":0.6,"Blizz World":-0.1,"Eichenwalde":-0.3,"Hollywood":-0.7,"King's Row":0.0,"Midtown":0.2,"Neo Junction":0.2,"Numbani":-1.1,"Paraiso":0.2,"Colosseo":0.1,"Esperanca":1.1,"Queen St.":0.0,"Runasapi":1.9}},{"name":"Jetpack Cat","role":"Support","overall":51.8,"byMap":{"Antarctica":-1.5,"Busan":1.6,"Ilios":3.0,"Lijiang":0.8,"Nepal":0.9,"Oasis":0.9,"Samoa":-0.3,"Circuit Royal":-1.4,"Dorado":-0.4,"Havana":-3.2,"Junkertown":-1.8,"Rialto":-0.5,"Route 66":0.3,"Shambali":-0.7,"Gibraltar":0.6,"Aatlis":-3.5,"New Junk":-2.3,"Suravasa":-0.7,"Blizz World":1.2,"Eichenwalde":3.5,"Hollywood":-1.0,"King's Row":-1.2,"Midtown":-1.3,"Neo Junction":-3.1,"Numbani":-0.1,"Paraiso":0.7,"Colosseo":2.0,"Esperanca":-1.9,"Queen St.":-1.0,"Runasapi":-2.6}},{"name":"Juno","role":"Support","overall":51.3,"byMap":{"Antarctica":0.3,"Busan":-0.1,"Ilios":-1.0,"Lijiang":-0.4,"Nepal":-1.4,"Oasis":0.2,"Samoa":0.3,"Circuit Royal":1.4,"Dorado":-0.8,"Havana":0.5,"Junkertown":0.3,"Rialto":-0.4,"Route 66":-0.4,"Shambali":0.2,"Gibraltar":-0.3,"Aatlis":-0.2,"New Junk":-2.2,"Suravasa":0.7,"Blizz World":0.3,"Eichenwalde":-0.5,"Hollywood":0.4,"King's Row":-0.1,"Midtown":-0.2,"Neo Junction":1.4,"Numbani":2.0,"Paraiso":0.5,"Colosseo":1.2,"Esperanca":0.8,"Queen St.":1.1,"Runasapi":0.5}},{"name":"Kiriko","role":"Support","overall":46.4,"byMap":{"Antarctica":-0.5,"Busan":-0.1,"Ilios":-1.1,"Lijiang":-0.4,"Nepal":0.1,"Oasis":0.0,"Samoa":-0.7,"Circuit Royal":-0.6,"Dorado":-0.1,"Havana":0.4,"Junkertown":0.9,"Rialto":0.2,"Route 66":-0.2,"Shambali":-0.5,"Gibraltar":0.1,"Aatlis":-0.1,"New Junk":-0.6,"Suravasa":-1.0,"Blizz World":1.4,"Eichenwalde":0.3,"Hollywood":1.0,"King's Row":0.7,"Midtown":0.6,"Neo Junction":0.5,"Numbani":-0.2,"Paraiso":2.0,"Colosseo":-0.1,"Esperanca":-0.7,"Queen St.":0.7,"Runasapi":0.2}},{"name":"Lifeweaver","role":"Support","overall":47.8,"byMap":{"Antarctica":0.2,"Busan":1.7,"Ilios":-0.8,"Lijiang":-1.4,"Nepal":-0.9,"Oasis":0.2,"Samoa":-0.2,"Circuit Royal":1.8,"Dorado":0.3,"Havana":1.0,"Junkertown":1.0,"Rialto":-0.3,"Route 66":0.1,"Shambali":0.2,"Gibraltar":2.0,"Aatlis":0.0,"New Junk":2.0,"Suravasa":-1.0,"Blizz World":0.2,"Eichenwalde":-1.1,"Hollywood":0.6,"King's Row":-0.4,"Midtown":0.2,"Neo Junction":-0.2,"Numbani":1.5,"Paraiso":0.6,"Colosseo":0.0,"Esperanca":1.1,"Queen St.":-1.7,"Runasapi":-0.1}},{"name":"Lúcio","role":"Support","overall":50.6,"byMap":{"Antarctica":0.9,"Busan":1.3,"Ilios":4.6,"Lijiang":3.4,"Nepal":2.8,"Oasis":-0.1,"Samoa":0.0,"Circuit Royal":-3.8,"Dorado":-0.3,"Havana":-1.6,"Junkertown":-2.7,"Rialto":-2.5,"Route 66":0.4,"Shambali":-0.8,"Gibraltar":-3.5,"Aatlis":1.4,"New Junk":1.0,"Suravasa":2.6,"Blizz World":-2.6,"Eichenwalde":-0.9,"Hollywood":-2.2,"King's Row":-2.6,"Midtown":-0.5,"Neo Junction":-1.6,"Numbani":-2.2,"Paraiso":-3.5,"Colosseo":1.8,"Esperanca":-0.9,"Queen St.":0.4,"Runasapi":1.7}},{"name":"Mercy","role":"Support","overall":49.9,"byMap":{"Antarctica":0.6,"Busan":-0.4,"Ilios":-0.3,"Lijiang":-1.3,"Nepal":-1.4,"Oasis":0.0,"Samoa":-0.2,"Circuit Royal":1.2,"Dorado":0.1,"Havana":0.3,"Junkertown":0.6,"Rialto":-0.1,"Route 66":1.3,"Shambali":1.7,"Gibraltar":0.3,"Aatlis":0.5,"New Junk":0.0,"Suravasa":1.4,"Blizz World":0.4,"Eichenwalde":-0.6,"Hollywood":-0.3,"King's Row":-0.7,"Midtown":0.3,"Neo Junction":0.5,"Numbani":0.2,"Paraiso":0.8,"Colosseo":1.0,"Esperanca":1.9,"Queen St.":1.5,"Runasapi":1.0}},{"name":"Mizuki","role":"Support","overall":53.8,"byMap":{"Antarctica":-0.7,"Busan":0.1,"Ilios":-1.3,"Lijiang":-0.1,"Nepal":-0.9,"Oasis":0.2,"Samoa":0.5,"Circuit Royal":0.3,"Dorado":-0.2,"Havana":0.3,"Junkertown":-1.0,"Rialto":0.8,"Route 66":0.1,"Shambali":0.1,"Gibraltar":0.3,"Aatlis":2.1,"New Junk":0.3,"Suravasa":-0.6,"Blizz World":0.4,"Eichenwalde":0.4,"Hollywood":-0.8,"King's Row":0.3,"Midtown":0.5,"Neo Junction":1.5,"Numbani":0.5,"Paraiso":-0.1,"Colosseo":-0.5,"Esperanca":-1.8,"Queen St.":0.0,"Runasapi":-0.4}},{"name":"Moira","role":"Support","overall":49.7,"byMap":{"Antarctica":1.9,"Busan":1.0,"Ilios":0.3,"Lijiang":2.3,"Nepal":2.3,"Oasis":1.6,"Samoa":1.4,"Circuit Royal":-0.9,"Dorado":-0.6,"Havana":-0.3,"Junkertown":-1.3,"Rialto":-0.8,"Route 66":-1.3,"Shambali":-0.9,"Gibraltar":-0.5,"Aatlis":0.0,"New Junk":1.2,"Suravasa":0.5,"Blizz World":0.2,"Eichenwalde":-0.4,"Hollywood":0.3,"King's Row":0.2,"Midtown":-0.6,"Neo Junction":0.3,"Numbani":-1.8,"Paraiso":0.3,"Colosseo":-0.2,"Esperanca":1.2,"Queen St.":0.8,"Runasapi":1.1}},{"name":"Wuyang","role":"Support","overall":50.0,"byMap":{"Antarctica":0.6,"Busan":0.7,"Ilios":-2.2,"Lijiang":-0.3,"Nepal":-1.7,"Oasis":-1.7,"Samoa":-1.0,"Circuit Royal":1.7,"Dorado":-1.4,"Havana":1.8,"Junkertown":-0.1,"Rialto":0.6,"Route 66":0.4,"Shambali":2.2,"Gibraltar":1.2,"Aatlis":0.8,"New Junk":-0.4,"Suravasa":-3.3,"Blizz World":0.5,"Eichenwalde":0.8,"Hollywood":0.3,"King's Row":0.1,"Midtown":0.6,"Neo Junction":-0.5,"Numbani":1.5,"Paraiso":-0.6,"Colosseo":-0.1,"Esperanca":-1.2,"Queen St.":0.0,"Runasapi":-0.2}},{"name":"Zenyatta","role":"Support","overall":53.8,"byMap":{"Antarctica":0.7,"Busan":-1.1,"Ilios":-2.6,"Lijiang":-0.7,"Nepal":-0.1,"Oasis":-0.5,"Samoa":-0.7,"Circuit Royal":2.0,"Dorado":-0.1,"Havana":1.5,"Junkertown":1.1,"Rialto":0.8,"Route 66":-0.6,"Shambali":0.0,"Gibraltar":0.0,"Aatlis":-2.4,"New Junk":1.4,"Suravasa":0.1,"Blizz World":0.2,"Eichenwalde":0.7,"Hollywood":0.7,"King's Row":0.7,"Midtown":0.9,"Neo Junction":0.7,"Numbani":-0.8,"Paraiso":-2.1,"Colosseo":-1.4,"Esperanca":-0.7,"Queen St.":1.1,"Runasapi":0.3}}]}</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById('ow-data').textContent);
+  var maps = data.maps;
+  var heroes = data.heroes;
+
+  var mapById = {};
+  maps.forEach(function (m) { mapById[m.key] = m; });
+
+  var state = { mapKey: maps[0] && maps[0].key, role: 'All' };
+
+  function fmtPct(v) {
+    if (v === null || v === undefined) return '—';
+    var s = (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+    return s;
+  }
+
+  function fmtOverall(v) {
+    if (v === null || v === undefined) return '';
+    return v.toFixed(1) + '%';
+  }
+
+  function heroesForMap(mapKey, role) {
+    var out = heroes.filter(function (h) {
+      if (role !== 'All' && h.role !== role) return false;
+      return typeof h.byMap[mapKey] === 'number';
+    });
+    return out.map(function (h) {
+      return {
+        name: h.name,
+        role: h.role,
+        overall: h.overall,
+        dev: h.byMap[mapKey]
+      };
+    });
+  }
+
+  function renderList(title, list, kind) {
+    if (list.length === 0) {
+      return '<div class="list-card ' + kind + '"><h4>' + title + '</h4><div class="empty">No data.</div></div>';
+    }
+    var rows = list.map(function (h, i) {
+      var devClass = h.dev >= 0 ? 'pos' : 'neg';
+      return '' +
+        '<div class="row">' +
+          '<div class="rank">' + (i + 1) + '</div>' +
+          '<div class="name">' + escapeHtml(h.name) + '</div>' +
+          '<div class="dev ' + devClass + '">' + fmtPct(h.dev) + '</div>' +
+          '<div class="overall">' + fmtOverall(h.overall) + '</div>' +
+        '</div>';
+    }).join('');
+    return '<div class="list-card ' + kind + '"><h4>' + title + '</h4>' + rows + '</div>';
+  }
+
+  function renderRoleSection(map, role) {
+    var list = heroesForMap(map.key, role);
+    list.sort(function (a, b) { return b.dev - a.dev; });
+    var top = list.slice(0, 5);
+    var bot = list.slice(-5).reverse();
+    return '' +
+      '<div class="role-section role-' + role + '">' +
+        '<h3><span class="dot"></span>' + role + '</h3>' +
+        '<div class="lists">' +
+          renderList('Top 5', top, 'top') +
+          renderList('Bottom 5 (avoid)', bot, 'bot') +
+        '</div>' +
+      '</div>';
+  }
+
+  function render() {
+    var map = mapById[state.mapKey];
+    if (!map) return;
+    var meta = map.meta || {};
+    var html = '';
+    html += '<div class="map-card">';
+    html +=   '<h2><span class="mode-badge">' + escapeHtml(map.mode) + '</span>' + escapeHtml(map.name) + '</h2>';
+    if (meta.description) {
+      html += '<p class="desc">' + escapeHtml(meta.description) + '</p>';
+    }
+    if (meta.tips) {
+      html += '<div class="tips"><h4>Tips</h4>' + renderBullets(meta.tips) + '</div>';
+    }
+    html += '</div>';
+
+    if (state.role === 'All') {
+      ['Tank', 'DPS', 'Support'].forEach(function (r) {
+        html += renderRoleSection(map, r);
+      });
+    } else {
+      html += renderRoleSection(map, state.role);
+    }
+    document.getElementById('mapView').innerHTML = html;
+  }
+
+  function renderBullets(txt) {
+    var lines = txt.split(/\n+/).map(function (l) { return l.replace(/^[-\*]\s*/, '').trim(); }).filter(Boolean);
+    if (!lines.length) return '';
+    return '<ul style="margin:0;padding-left:18px;">' + lines.map(function (l) {
+      return '<li>' + escapeHtml(l) + '</li>';
+    }).join('') + '</ul>';
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Populate map selector, grouped by mode.
+  var sel = document.getElementById('mapSelect');
+  var modeOrder = ['Control', 'Escort', 'Flashpoint', 'Hybrid', 'Push'];
+  modeOrder.forEach(function (mode) {
+    var group = document.createElement('optgroup');
+    group.label = mode;
+    maps.filter(function (m) { return m.mode === mode; }).forEach(function (m) {
+      var opt = document.createElement('option');
+      opt.value = m.key;
+      opt.textContent = m.name;
+      group.appendChild(opt);
+    });
+    sel.appendChild(group);
+  });
+  sel.value = state.mapKey;
+  sel.addEventListener('change', function () {
+    state.mapKey = sel.value;
+    render();
+  });
+
+  document.querySelectorAll('#roleFilter button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#roleFilter button').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.role = btn.getAttribute('data-role');
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
